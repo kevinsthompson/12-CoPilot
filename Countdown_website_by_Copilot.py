@@ -9,10 +9,12 @@
 # %%
 
 
-
+# "jupyter": "This is a Jupyter notebook.  Each cell is delimited by # %%.  And please provide some debugging output as each cell starts to run and complete. Finally, please ensure that any code you provide is valid Python code that can run in a Jupyter notebook environment or as a single python script:"   
 
 
 # %%
+
+
 """
 Cell 1: Instrumentation utilities
 Each cell prints start/end debug messages with timing and optional memory stats.
@@ -55,9 +57,9 @@ _st = cell_start("Init instrumentation utilities")
 cell_end(_st)
 
 
-
-
 # %%
+
+
 """
 Cell 2: Dependencies (Gradio) setup
 - Ensures gradio is available (installs if missing)
@@ -81,8 +83,9 @@ gr = ensure_package("gradio")
 cell_end(_st)
 
 
-
 # %%
+
+
 """
 Cell 3: Game stubs and helpers
 Two simple game stubs to be implemented later:
@@ -116,8 +119,6 @@ def rps_game_reset():
     return ""
 
 cell_end(_st)
-
-
 
 
 # %%
@@ -160,8 +161,11 @@ def build_app():
 demo = build_app()
 
 cell_end(_st)
-```python
+
+
 # %%
+
+
 """
 Cell 5: Launch app
 - Launches inline in notebooks
@@ -193,12 +197,11 @@ if __name__ == "__main__":
 
 cell_end(_st)
 
-# %%
-
-
-
-
-
 
 # %%
-# "jupyter": "This is a Jupyter notebook.  Each cell is delimited by # %%.  And please provide some debugging output as each cell starts to run and complete. Finally, please ensure that any code you provide is valid Python code that can run in a Jupyter notebook environment or as a single python script:"   
+
+stop_app()
+
+
+
+# %%
