@@ -85,26 +85,57 @@ cell_end(_st)
 
 # %%
 
-
 """
-Cell 3: Game stubs and helpers
-Two simple game stubs to be implemented later:
-- Guess the Number (stub)
-- Rock-Paper-Scissors (stub)
+Cell 3: Countdown Numbers Game + RPS helpers
+Replaces the old 'Guess the Number' with the Countdown Numbers game.
 """
-_st = cell_start("Define game stubs and helpers")
+_st = cell_start("Define game logic")
 
-# Guess the Number (stub)
-def guess_game_submit(guess):
+import random
+
+# Countdown Numbers Game setup
+_LARGE = [25, 50, 75, 100]
+_SMALL = [n for n in range(1, 11)] * 2  # two of each 1-10
+_current_numbers: list[int] = []
+_current_target: int | None = None
+
+def countdown_deal(large_count: int):
+    global _current_numbers, _current_target
     try:
-        if guess is None or (isinstance(guess, float) and not guess == guess):
-            return "Please enter a number."
-        return f"Stub: You guessed {int(guess)}. Game logic will be added later."
+        if not (0 <= large_count <= 4):
+            return "Choose between 0 and 4 large numbers."
+        large = random.sample(_LARGE, large_count)
+        small = random.sample(_SMALL, 6 - large_count)
+        _current_numbers = large + small
+        random.shuffle(_current_numbers)
+        _current_target = random.randint(100, 999)
+        nums = " ".join(str(n) for n in _current_numbers)
+        return f"Target: {_current_target}\nNumbers: {nums}"
     except Exception:
         traceback.print_exc()
-        return "Error: Invalid input."
+        return "Error dealing numbers."
 
-def guess_game_reset():
+def countdown_check(final_result):
+    if _current_target is None or not _current_numbers:
+        return "Deal numbers first."
+    if final_result is None:
+        return "Enter a result."
+    try:
+        val = int(final_result)
+    except Exception:
+        return "Result must be an integer."
+    diff = abs(val - _current_target)
+    if diff == 0:
+        return f"Perfect! You hit {val} exactly."
+    elif diff <= 5:
+        return f"Close! {val} (off by {diff})."
+    else:
+        return f"{val} (off by {diff}). Target was {_current_target}."
+
+def countdown_reset():
+    global _current_numbers, _current_target
+    _current_numbers = []
+    _current_target = None
     return ""
 
 # Rock-Paper-Scissors (stub)
@@ -120,11 +151,48 @@ def rps_game_reset():
 
 cell_end(_st)
 
+# """
+# Cell 3: Game stubs and helpers
+# Two simple game stubs to be implemented later:
+# - Guess the Number (stub)
+# - Rock-Paper-Scissors (stub)
+# """
+# _st = cell_start("Define game stubs and helpers")
+
+# # Guess the Number (stub)
+# def guess_game_submit(guess):
+#     try:
+#         if guess is None or (isinstance(guess, float) and not guess == guess):
+#             return "Please enter a number."
+#         return f"Stub: You guessed {int(guess)}. Game logic will be added later."
+#     except Exception:
+#         traceback.print_exc()
+#         return "Error: Invalid input."
+
+# def guess_game_reset():
+#     return ""
+
+# # Rock-Paper-Scissors (stub)
+# _CHOICES = ["Rock", "Paper", "Scissors"]
+
+# def rps_game_submit(choice):
+#     if not choice:
+#         return "Please choose Rock, Paper, or Scissors."
+#     return f"Stub: You chose {choice}. Game logic will be added later."
+
+# def rps_game_reset():
+#     return ""
+
+# cell_end(_st)
+
 
 # %%
+
+
 """
 Cell 4: Build Gradio UI (website)
-- Two tabs hosting the two game stubs
+- Countdown Numbers Game
+- Rock-Paper-Scissors stub
 """
 _st = cell_start("Build Gradio UI")
 
@@ -132,17 +200,21 @@ import gradio as gr  # type: ignore
 
 def build_app():
     with gr.Blocks(title="Mini Games Hub") as demo:
-        gr.Markdown("# Mini Games Hub\nTwo simple games (stubs). Functionality coming soon.")
-        with gr.Tab("Guess the Number (stub)"):
-            gr.Markdown("Enter an integer and press Submit. We'll implement the logic later.")
-            guess_input = gr.Number(label="Your guess (integer)", precision=0, value=0)
+        gr.Markdown("# Mini Games Hub\nCountdown Numbers Game + Rock-Paper-Scissors (stub).")
+        with gr.Tab("Countdown Numbers Game"):
+            gr.Markdown("Select large numbers count (0–4) then Deal. Try to reach the target using arithmetic. Enter the final result you achieved.")
+            large_input = gr.Slider(minimum=0, maximum=4, step=1, value=2, label="Large numbers count")
             with gr.Row():
-                guess_submit = gr.Button("Submit", variant="primary")
-                guess_reset_btn = gr.Button("Reset")
-            guess_output = gr.Textbox(label="Result", interactive=False)
+                deal_btn = gr.Button("Deal", variant="primary")
+                reset_btn = gr.Button("Reset")
+            numbers_output = gr.Textbox(label="Board", interactive=False)
+            final_result = gr.Number(label="Your final result", precision=0)
+            check_btn = gr.Button("Check")
+            check_output = gr.Textbox(label="Feedback", interactive=False)
 
-            guess_submit.click(fn=guess_game_submit, inputs=guess_input, outputs=guess_output)
-            guess_reset_btn.click(fn=guess_game_reset, inputs=None, outputs=guess_output)
+            deal_btn.click(fn=countdown_deal, inputs=large_input, outputs=numbers_output)
+            reset_btn.click(fn=countdown_reset, inputs=None, outputs=numbers_output)
+            check_btn.click(fn=countdown_check, inputs=final_result, outputs=check_output)
 
         with gr.Tab("Rock-Paper-Scissors (stub)"):
             gr.Markdown("Pick your move and press Play. We'll add an opponent later.")
@@ -161,6 +233,47 @@ def build_app():
 demo = build_app()
 
 cell_end(_st)
+
+
+# """
+# Cell 4: Build Gradio UI (website)
+# - Two tabs hosting the two game stubs
+# """
+# _st = cell_start("Build Gradio UI")
+
+# import gradio as gr  # type: ignore
+
+# def build_app():
+#     with gr.Blocks(title="Mini Games Hub") as demo:
+#         gr.Markdown("# Mini Games Hub\nTwo simple games (stubs). Functionality coming soon.")
+#         with gr.Tab("Guess the Number (stub)"):
+#             gr.Markdown("Enter an integer and press Submit. We'll implement the logic later.")
+#             guess_input = gr.Number(label="Your guess (integer)", precision=0, value=0)
+#             with gr.Row():
+#                 guess_submit = gr.Button("Submit", variant="primary")
+#                 guess_reset_btn = gr.Button("Reset")
+#             guess_output = gr.Textbox(label="Result", interactive=False)
+
+#             guess_submit.click(fn=guess_game_submit, inputs=guess_input, outputs=guess_output)
+#             guess_reset_btn.click(fn=guess_game_reset, inputs=None, outputs=guess_output)
+
+#         with gr.Tab("Rock-Paper-Scissors (stub)"):
+#             gr.Markdown("Pick your move and press Play. We'll add an opponent later.")
+#             rps_choice = gr.Dropdown(choices=_CHOICES, value=None, label="Your move")
+#             with gr.Row():
+#                 rps_submit = gr.Button("Play", variant="primary")
+#                 rps_reset_btn = gr.Button("Reset")
+#             rps_output = gr.Textbox(label="Result", interactive=False)
+
+#             rps_submit.click(fn=rps_game_submit, inputs=rps_choice, outputs=rps_output)
+#             rps_reset_btn.click(fn=rps_game_reset, inputs=None, outputs=rps_output)
+
+#         gr.Markdown("— © Mini Games Hub")
+#     return demo
+
+# demo = build_app()
+
+# cell_end(_st)
 
 
 # %%
