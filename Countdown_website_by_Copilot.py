@@ -84,7 +84,6 @@ cell_end(_st)
 
 
 # %%
-
 """
 Cell 3: Countdown Numbers Game + RPS helpers
 Replaces the old 'Guess the Number' with the Countdown Numbers game.
@@ -92,53 +91,133 @@ Replaces the old 'Guess the Number' with the Countdown Numbers game.
 _st = cell_start("Define game logic")
 
 import random
+import time
+from functools import lru_cache
+from typing import List, Optional, Tuple
 
-# Countdown Numbers Game setup
 _LARGE = [25, 50, 75, 100]
 _SMALL = [n for n in range(1, 11)] * 2  # two of each 1-10
-_current_numbers: list[int] = []
-_current_target: int | None = None
 
-def countdown_deal(large_count: int):
+_current_numbers: List[int] = []
+_current_target: Optional[int] = None
+
+def countdown_deal_random(large_count: int):
+    """Randomly deal numbers and target based on requested large count."""
     global _current_numbers, _current_target
-    try:
-        if not (0 <= large_count <= 4):
-            return "Choose between 0 and 4 large numbers."
-        large = random.sample(_LARGE, large_count)
-        small = random.sample(_SMALL, 6 - large_count)
-        _current_numbers = large + small
-        random.shuffle(_current_numbers)
-        _current_target = random.randint(100, 999)
-        nums = " ".join(str(n) for n in _current_numbers)
-        return f"Target: {_current_target}\nNumbers: {nums}"
-    except Exception:
-        traceback.print_exc()
-        return "Error dealing numbers."
+    if not (0 <= large_count <= 4):
+        return [None]*7
+    large = random.sample(_LARGE, large_count)
+    small = random.sample(_SMALL, 6 - large_count)
+    nums = large + small
+    random.shuffle(nums)
+    target = random.randint(100, 999)
+    _current_numbers = nums[:]
+    _current_target = target
+    return [*nums, target]
 
-def countdown_check(final_result):
-    if _current_target is None or not _current_numbers:
-        return "Deal numbers first."
-    if final_result is None:
-        return "Enter a result."
-    try:
-        val = int(final_result)
-    except Exception:
-        return "Result must be an integer."
-    diff = abs(val - _current_target)
-    if diff == 0:
-        return f"Perfect! You hit {val} exactly."
-    elif diff <= 5:
-        return f"Close! {val} (off by {diff})."
-    else:
-        return f"{val} (off by {diff}). Target was {_current_target}."
+def countdown_generate_target():
+    """Generate a random target (keeping chosen numbers)."""
+    global _current_target
+    _current_target = random.randint(100, 999)
+    return _current_target
 
 def countdown_reset():
+    """Clear board."""
     global _current_numbers, _current_target
     _current_numbers = []
     _current_target = None
-    return ""
+    return [None, None, None, None, None, None, None, ""]
 
-# Rock-Paper-Scissors (stub)
+def _validate_selection(nums: List[Optional[int]]) -> Optional[str]:
+    picked = [n for n in nums if n is not None]
+    if len(picked) != 6:
+        return "Pick exactly 6 numbers."
+    large_used = sum(1 for n in picked if n in _LARGE)
+    if large_used > 4:
+        return "At most 4 large numbers."
+    for L in _LARGE:
+        if picked.count(L) > 1:
+            return f"Large number {L} at most once."
+    for s in range(1, 11):
+        if picked.count(s) > 2:
+            return f"Small number {s} at most twice."
+    return None
+
+def _solve(numbers: List[int], target: int, time_limit: float = 3.0) -> Tuple[int, List[str]]:
+    start = time.perf_counter()
+    best_val: Optional[int] = None
+    best_steps: List[str] = []
+    best_diff = float("inf")
+
+    def update(val: int, steps: List[str]):
+        nonlocal best_val, best_steps, best_diff
+        d = abs(val - target)
+        if d < best_diff or (d == best_diff and len(steps) < len(best_steps)):
+            best_val, best_steps, best_diff = val, steps[:], d
+
+    @lru_cache(maxsize=None)
+    def search(state: Tuple[int, ...]) -> None:
+        if time.perf_counter() - start > time_limit:
+            return
+        if len(state) == 1:
+            update(state[0], [])
+            return
+        n = len(state)
+        for i in range(n):
+            a = state[i]
+            for j in range(i+1, n):
+                b = state[j]
+                rest = list(state[:i] + state[i+1:j] + state[j+1:])
+                ops: List[Tuple[int, str]] = []
+                ops.append((a + b, f"{a} + {b} = {a + b}"))
+                if a != 1 and b != 1:
+                    ops.append((a * b, f"{a} × {b} = {a * b}"))
+                if a > b:
+                    ops.append((a - b, f"{a} - {b} = {a - b}"))
+                if b > a:
+                    ops.append((b - a, f"{b} - {a} = {b - a}"))
+                if b != 0 and a % b == 0 and b != 1:
+                    ops.append((a // b, f"{a} ÷ {b} = {a // b}"))
+                if a != 0 and b % a == 0 and a != 1:
+                    ops.append((b // a, f"{b} ÷ {a} = {b // a}"))
+                for val, desc in ops:
+                    if val <= 0:
+                        continue
+                    new_state = tuple(sorted(rest + [val]))
+                    prev_best = (best_val, best_diff)
+                    search(new_state)
+                    if best_val != prev_best[0] or abs(best_val - target) < prev_best[1]:
+                        # If improved, prepend this step (build from bottom)
+                        if desc not in best_steps:
+                            best_steps.insert(0, desc)
+                    if best_diff == 0:
+                        return
+
+    search(tuple(sorted(numbers)))
+    assert best_val is not None
+    return best_val, best_steps
+
+def countdown_solve(n1, n2, n3, n4, n5, n6, target):
+    nums = [n1, n2, n3, n4, n5, n6]
+    msg = _validate_selection(nums)
+    if msg:
+        return msg
+    if target is None:
+        return "Enter a target (100–999) or use Random Deal / Random Target."
+    try:
+        t = int(target)
+    except:
+        return "Target must be integer."
+    if not (100 <= t <= 999):
+        return "Target must be 100–999."
+    val, steps = _solve([int(x) for x in nums], t)
+    diff = abs(val - t)
+    header = f"Target: {t}\nNumbers: {' '.join(str(x) for x in nums)}\nBest: {val} (off by {diff})"
+    if not steps:
+        return header + "\nNo operations needed."
+    body = "\n".join(f"{i+1}) {s}" for i, s in enumerate(steps))
+    return header + "\n\nSteps:\n" + body
+
 _CHOICES = ["Rock", "Paper", "Scissors"]
 
 def rps_game_submit(choice):
@@ -152,9 +231,8 @@ def rps_game_reset():
 cell_end(_st)
 
 
+
 # %%
-
-
 """
 Cell 4: Build Gradio UI (website)
 - Countdown Numbers Game
@@ -164,34 +242,46 @@ _st = cell_start("Build Gradio UI")
 
 import gradio as gr  # type: ignore
 
+_ALL_CHOICES = [*range(1, 11), 25, 50, 75, 100]
+
 def build_app():
     with gr.Blocks(title="Mini Games Hub") as demo:
         gr.Markdown("# Mini Games Hub\nCountdown Numbers Game + Rock-Paper-Scissors (stub).")
-        with gr.Tab("Countdown Numbers Game"):
-            gr.Markdown("Select large numbers count (0–4) then Deal. Try to reach the target using arithmetic. Enter the final result you achieved.")
-            large_input = gr.Slider(minimum=0, maximum=4, step=1, value=2, label="Large numbers count")
-            with gr.Row():
-                deal_btn = gr.Button("Deal", variant="primary")
-                reset_btn = gr.Button("Reset")
-            numbers_output = gr.Textbox(label="Board", interactive=False)
-            final_result = gr.Number(label="Your final result", precision=0)
-            check_btn = gr.Button("Check")
-            check_output = gr.Textbox(label="Feedback", interactive=False)
 
-            deal_btn.click(fn=countdown_deal, inputs=large_input, outputs=numbers_output)
-            reset_btn.click(fn=countdown_reset, inputs=None, outputs=numbers_output)
-            check_btn.click(fn=countdown_check, inputs=final_result, outputs=check_output)
+        with gr.Tab("Countdown Numbers Game"):
+            gr.Markdown("Select 6 numbers manually or use Random Deal. Then set/roll a target and click Solve.")
+            with gr.Row():
+                large_input = gr.Slider(minimum=0, maximum=4, step=1, value=2, label="Large numbers count (Random Deal)")
+                deal_btn = gr.Button("Random Deal", variant="primary")
+                rand_target_btn = gr.Button("Random Target")
+                reset_btn = gr.Button("Reset")
+
+            with gr.Row():
+                n1 = gr.Dropdown(choices=_ALL_CHOICES, label="Number 1")
+                n2 = gr.Dropdown(choices=_ALL_CHOICES, label="Number 2")
+                n3 = gr.Dropdown(choices=_ALL_CHOICES, label="Number 3")
+                n4 = gr.Dropdown(choices=_ALL_CHOICES, label="Number 4")
+                n5 = gr.Dropdown(choices=_ALL_CHOICES, label="Number 5")
+                n6 = gr.Dropdown(choices=_ALL_CHOICES, label="Number 6")
+
+            target_in = gr.Number(label="Target (100–999)", precision=0)
+            solve_btn = gr.Button("Solve", variant="primary")
+            solution_out = gr.Textbox(label="Solution", interactive=False)
+
+            deal_btn.click(countdown_deal_random, inputs=large_input, outputs=[n1, n2, n3, n4, n5, n6, target_in])
+            rand_target_btn.click(countdown_generate_target, outputs=target_in)
+            reset_btn.click(countdown_reset, outputs=[n1, n2, n3, n4, n5, n6, target_in, solution_out])
+            solve_btn.click(countdown_solve, inputs=[n1, n2, n3, n4, n5, n6, target_in], outputs=solution_out)
 
         with gr.Tab("Rock-Paper-Scissors (stub)"):
-            gr.Markdown("Pick your move and press Play. We'll add an opponent later.")
-            rps_choice = gr.Dropdown(choices=_CHOICES, value=None, label="Your move")
+            gr.Markdown("Pick your move and press Play.")
+            rps_choice = gr.Dropdown(choices=_CHOICES, label="Your move")
             with gr.Row():
                 rps_submit = gr.Button("Play", variant="primary")
                 rps_reset_btn = gr.Button("Reset")
             rps_output = gr.Textbox(label="Result", interactive=False)
-
-            rps_submit.click(fn=rps_game_submit, inputs=rps_choice, outputs=rps_output)
-            rps_reset_btn.click(fn=rps_game_reset, inputs=None, outputs=rps_output)
+            rps_submit.click(rps_game_submit, inputs=rps_choice, outputs=rps_output)
+            rps_reset_btn.click(rps_game_reset, outputs=rps_output)
 
         gr.Markdown("— © Mini Games Hub")
     return demo
@@ -199,11 +289,12 @@ def build_app():
 demo = build_app()
 
 cell_end(_st)
+```
+
+
 
 
 # %%
-
-
 """
 Cell 5: Launch app
 - Launches inline in notebooks
@@ -237,7 +328,7 @@ cell_end(_st)
 
 
 # %%
-
 stop_app()
 
-%
+
+# %%
