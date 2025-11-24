@@ -101,19 +101,18 @@ _SMALL = [n for n in range(1, 11)] * 2  # two of each 1-10
 _current_numbers: List[int] = []
 _current_target: Optional[int] = None
 
+
 def countdown_deal_random(large_count: int):
-    """Randomly deal numbers and target based on requested large count."""
-    global _current_numbers, _current_target
+    """Randomly deal numbers (does NOT change target)."""
+    global _current_numbers
     if not (0 <= large_count <= 4):
         return [None]*7
     large = random.sample(_LARGE, large_count)
     small = random.sample(_SMALL, 6 - large_count)
     nums = large + small
     random.shuffle(nums)
-    target = random.randint(100, 999)
     _current_numbers = nums[:]
-    _current_target = target
-    return [*nums, target]
+    return [*nums, _current_target]
 
 def countdown_generate_target():
     """Generate a random target (keeping chosen numbers)."""
@@ -203,7 +202,7 @@ def countdown_solve(n1, n2, n3, n4, n5, n6, target):
     if msg:
         return msg
     if target is None:
-        return "Enter a target (100–999) or use Random Deal / Random Target."
+        return "Enter a target (100–999) or use Random Target."
     try:
         t = int(target)
     except:
@@ -289,7 +288,6 @@ def build_app():
 demo = build_app()
 
 cell_end(_st)
-```
 
 
 
