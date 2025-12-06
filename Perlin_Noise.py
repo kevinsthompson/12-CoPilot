@@ -6,6 +6,9 @@
     "nbformat_minor": 5
 }
 
+# %% [markdown]
+# # Perlin Noise Demo
+# This notebook generates and displays a 2D Perlin noise image using NumPy and Matplotlib.
 
 
 # %%
@@ -66,17 +69,21 @@ def perlin(width, height, scale=8, seed=None):
     nmin, nmax = nxy.min(), nxy.max()
     return (nxy - nmin) / (nmax - nmin + 1e-12)
 
-# %%
 
+# %%
+# Parameters (adjust and re-run this cell)
 width, height = 512, 512
-img = perlin(width, height, scale=16, seed=42)
+scale = 16
+seed = 42
+
+img = perlin(width, height, scale=scale, seed=seed)
 
 plt.figure(figsize=(6, 6))
 plt.imshow(img, cmap='gray', interpolation='nearest')
 plt.axis('off')
-plt.title('Perlin Noise')
+plt.title(f'Perlin Noise (scale={scale}, seed={seed})')
 plt.show()
 
-# %%
 
+# %%
 # "jupyter": "This is a Jupyter notebook.  Each cell is delimited by # %%.  Please provide some debugging output as each cell starts to run and complete. Please ensure that any code you provide is valid Python code that can run in a Jupyter notebook environment or as a single python script"   
