@@ -265,8 +265,7 @@ def build_app():
 
             target_in = gr.Number(label="Target (100–999)", precision=0)
             solve_btn = gr.Button("Solve", variant="primary")
-            solution_out = gr.Textbox(label="Solution", interactive=False)
-
+            solution_out = gr.Textbox(label="Solution", interactive=False, lines=10)
             deal_btn.click(countdown_deal_random, inputs=large_input, outputs=[n1, n2, n3, n4, n5, n6, target_in])
             rand_target_btn.click(countdown_generate_target, outputs=target_in)
             reset_btn.click(countdown_reset, outputs=[n1, n2, n3, n4, n5, n6, target_in, solution_out])
