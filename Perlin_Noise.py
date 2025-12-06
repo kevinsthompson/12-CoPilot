@@ -6,13 +6,14 @@
     "nbformat_minor": 5
 }
 
+
+
 # %%
 import numpy as np
 import matplotlib.pyplot as plt
 
 
 # %%
-
 def perlin(width, height, scale=8, seed=None):
     rng = np.random.default_rng(seed)
 
